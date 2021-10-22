@@ -1,0 +1,20 @@
+[package]
+name = "uiohook-rs"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.56"
+
+[dependencies]
+uiohook-sys = {version = "*", path = "uiohook-sys"}
+flume = "0.10"
+once_cell = "1.8"
+thiserror = "1.0"
+strum = { version = "0.21", features = ["derive"] }
+dashmap = "4.0"
+ahash = { version = "0.7", default-features = false, features = ["compile-time-rng"] }
+parking_lot = "0.11"
+bitflags = "1.3"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "rustdoc"]
