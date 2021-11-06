@@ -1,3 +1,5 @@
+//! Events types and utilities for working with them.
+
 use std::thread::sleep;
 use std::time::Duration;
 

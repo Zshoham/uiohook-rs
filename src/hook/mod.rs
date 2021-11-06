@@ -1,3 +1,5 @@
+//! Hook creation and management.
+
 use std::collections::HashSet;
 use std::mem;
 
@@ -50,7 +52,7 @@ impl HookEvent {
     }
 }
 
-/// This macro is meant to simplify creating global hooks using nicer syntax.
+/// Create global hooks.
 ///
 /// The macro uses the [`Hook`] struct and all the innovations return a [`Hook`].
 /// The macro has 5 invocations to control how the hook is created.
@@ -137,7 +139,7 @@ macro_rules! hook {
     } };
 }
 
-/// This macro is meant to simplify creating keyboard hooks using nicer syntax.
+/// Create keyboard hooks.
 ///
 /// The macro wraps functionality provided by [`Hook`]'s various constructors to make
 /// them less verbose. Note that the macro returns a registered hook object from each invocation,
@@ -219,7 +221,7 @@ macro_rules! keyboard {
     } };
 }
 
-/// This macro is meant to simplify creating mouse hooks using nicer syntax.
+/// Create mouse hooks.
 ///
 /// The macro wraps functionality provided by [`Hook`]'s various constructors to make
 /// them less verbose. Note that the macro returns a registered hook object from each invocation,
@@ -301,7 +303,7 @@ macro_rules! mouse {
     } };
 }
 
-/// This macro is meant to simplify creating mouse drag hooks using nicer syntax.
+/// Create mouse drag hooks.
 ///
 /// The macro wraps functionality provided by [`Hook`]'s various constructors to make
 /// them less verbose. Note that the macro returns a registered hook object from each invocation,
@@ -412,7 +414,7 @@ macro_rules! mouse_drag {
     } };
 }
 
-/// This macro is meant to simplify creating mouse wheel hooks using nicer syntax.
+/// Create mouse wheel hooks.
 ///
 /// The macro wraps [`Hook::mouse_wheel`], and apart from returning an already registered hook doest,
 /// add anything more to the function call, and exists more to provide a uniform API for creating

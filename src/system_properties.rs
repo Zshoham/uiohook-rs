@@ -1,3 +1,5 @@
+//! Utility methods for system properties that might affect how events are interpreted.
+
 use ffi::screen_data;
 use uiohook_sys as ffi;
 
