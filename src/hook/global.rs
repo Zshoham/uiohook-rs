@@ -129,6 +129,8 @@
 //!
 //! [`Hook`]: crate::hook::Hook
 
+// we only use DerefMut on windows.
+#[allow(unused_imports)]
 use std::ops::DerefMut;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -155,7 +157,7 @@ static HOOKS: Lazy<Arc<DashMap<HookId, HookCallback, ahash::RandomState>>> =
 static RESERVE_CALLBACK: Mutex<Option<HookFilter>> = const_mutex(None);
 
 mod native {
-    use std::sync::atomic::{AtomicI32, Ordering};
+    use std::sync::atomic::{AtomicU32, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use ffi::uiohook_event;
@@ -168,10 +170,10 @@ mod native {
         EventKind, EventMetaData, HookEvent, KeyboardEvent, MouseEvent, MouseWheelEvent,
     };
     use crate::hook::global::RESERVE_CALLBACK;
-    use crate::{EventParseError, HookError};
+    use crate::HookError;
 
     static BASE_TIMESTAMP: OnceCell<u128> = OnceCell::new();
-    static SYNTHETIC: AtomicI32 = AtomicI32::new(0);
+    static SYNTHETIC: AtomicU32 = AtomicU32::new(0);
 
     fn set_timestamp(metadata: &mut EventMetaData) {
         // libuiohook uses the system uptime as a timestamp, which means that if we shut down the computer,
@@ -190,6 +192,8 @@ mod native {
     }
 
     fn set_mode(rusty_event: &mut HookEvent, native_event: &mut ffi::uiohook_event) {
+        // we only need this mut on windows to possibly change the type in the following if.
+        #[allow(unused_mut)]
         let mut event_type = native_event.type_;
 
         // This is used to make it possible to create synthetic drag events on windows.
@@ -199,26 +203,26 @@ mod native {
         // So on windows we do not distinguish between drag and move events in regard to weather
         // they are synthetic.
         #[cfg(target_os = "windows")]
-        if event_type == EVENT_MOUSE_DRAGGED {
-            event_type = EVENT_MOUSE_MOVED;
+        if event_type == NativeEventKind::EVENT_MOUSE_DRAGGED {
+            event_type = NativeEventKind::EVENT_MOUSE_MOVED;
         }
 
         if SYNTHETIC
-            .compare_exchange(event_type, 0, Ordering::SeqCst, Ordering::SeqCst)
+            .compare_exchange(event_type as u32, 0, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
             rusty_event.metadata.mode.insert(EventMode::SYNTHETIC);
         }
 
         if let Some(callback) = &*RESERVE_CALLBACK.lock() {
-            if callback(&rusty_event) {
+            if callback(rusty_event) {
                 rusty_event.metadata.mode.insert(EventMode::RESERVED);
                 native_event.reserved = EventMode::RESERVED.bits();
             }
         }
     }
 
-    pub fn from_native(native: &mut ffi::uiohook_event) -> Result<HookEvent, EventParseError> {
+    pub fn from_native(native: &mut ffi::uiohook_event) -> HookEvent {
         let mut meta = EventMetaData {
             time: native.time as u128,
             mask: native.mask.into(),
@@ -246,24 +250,23 @@ mod native {
         }
 
         let event_data = match native.type_ {
-            EVENT_HOOK_ENABLED => EventKind::Enabled,
-            EVENT_HOOK_DISABLED => EventKind::Disabled,
-            EVENT_KEY_TYPED => EventKind::KeyTyped(from_keyboard(native)),
-            EVENT_KEY_PRESSED => EventKind::KeyPressed(from_keyboard(native)),
-            EVENT_KEY_RELEASED => EventKind::KeyReleased(from_keyboard(native)),
-            EVENT_MOUSE_CLICKED => EventKind::MouseClicked(from_mouse(native)),
-            EVENT_MOUSE_PRESSED => EventKind::MousePressed(from_mouse(native)),
-            EVENT_MOUSE_RELEASED => EventKind::MouseReleased(from_mouse(native)),
-            EVENT_MOUSE_MOVED => EventKind::MouseMoved(from_mouse(native)),
-            EVENT_MOUSE_DRAGGED => EventKind::MouseDragged(from_mouse(native)),
-            EVENT_MOUSE_WHEEL => EventKind::MouseWheel(from_mouse_wheel(native)),
-            event_type_id => return Err(EventParseError(event_type_id)),
+            NativeEventKind::EVENT_HOOK_ENABLED => EventKind::Enabled,
+            NativeEventKind::EVENT_HOOK_DISABLED => EventKind::Disabled,
+            NativeEventKind::EVENT_KEY_TYPED => EventKind::KeyTyped(from_keyboard(native)),
+            NativeEventKind::EVENT_KEY_PRESSED => EventKind::KeyPressed(from_keyboard(native)),
+            NativeEventKind::EVENT_KEY_RELEASED => EventKind::KeyReleased(from_keyboard(native)),
+            NativeEventKind::EVENT_MOUSE_CLICKED => EventKind::MouseClicked(from_mouse(native)),
+            NativeEventKind::EVENT_MOUSE_PRESSED => EventKind::MousePressed(from_mouse(native)),
+            NativeEventKind::EVENT_MOUSE_RELEASED => EventKind::MouseReleased(from_mouse(native)),
+            NativeEventKind::EVENT_MOUSE_MOVED => EventKind::MouseMoved(from_mouse(native)),
+            NativeEventKind::EVENT_MOUSE_DRAGGED => EventKind::MouseDragged(from_mouse(native)),
+            NativeEventKind::EVENT_MOUSE_WHEEL => EventKind::MouseWheel(from_mouse_wheel(native)),
         };
 
-        Ok(HookEvent {
+        HookEvent {
             metadata: meta,
             kind: event_data,
-        })
+        }
     }
 
     pub fn into_native(event: HookEvent) -> ffi::uiohook_event {
@@ -271,63 +274,63 @@ mod native {
 
         let (event_type, event_data) = match event.kind {
             EventKind::Enabled => (
-                EVENT_HOOK_ENABLED,
+                NativeEventKind::EVENT_HOOK_ENABLED,
                 ffi::_uiohook_event__bindgen_ty_1::default(),
             ),
             EventKind::Disabled => (
-                EVENT_HOOK_DISABLED,
+                NativeEventKind::EVENT_HOOK_DISABLED,
                 ffi::_uiohook_event__bindgen_ty_1::default(),
             ),
             EventKind::KeyTyped(event_data) => (
-                EVENT_KEY_TYPED,
+                NativeEventKind::EVENT_KEY_TYPED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     keyboard: event_data.into(),
                 },
             ),
             EventKind::KeyPressed(event_data) => (
-                EVENT_KEY_PRESSED,
+                NativeEventKind::EVENT_KEY_PRESSED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     keyboard: event_data.into(),
                 },
             ),
             EventKind::KeyReleased(event_data) => (
-                EVENT_KEY_RELEASED,
+                NativeEventKind::EVENT_KEY_RELEASED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     keyboard: event_data.into(),
                 },
             ),
             EventKind::MouseClicked(event_data) => (
-                EVENT_MOUSE_CLICKED,
+                NativeEventKind::EVENT_MOUSE_CLICKED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     mouse: event_data.into(),
                 },
             ),
             EventKind::MousePressed(event_data) => (
-                EVENT_MOUSE_PRESSED,
+                NativeEventKind::EVENT_MOUSE_PRESSED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     mouse: event_data.into(),
                 },
             ),
             EventKind::MouseReleased(event_data) => (
-                EVENT_MOUSE_RELEASED,
+                NativeEventKind::EVENT_MOUSE_RELEASED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     mouse: event_data.into(),
                 },
             ),
             EventKind::MouseMoved(event_data) => (
-                EVENT_MOUSE_MOVED,
+                NativeEventKind::EVENT_MOUSE_MOVED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     mouse: event_data.into(),
                 },
             ),
             EventKind::MouseDragged(event_data) => (
-                EVENT_MOUSE_DRAGGED,
+                NativeEventKind::EVENT_MOUSE_DRAGGED,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     mouse: event_data.into(),
                 },
             ),
             EventKind::MouseWheel(event_data) => (
-                EVENT_MOUSE_WHEEL,
+                NativeEventKind::EVENT_MOUSE_WHEEL,
                 ffi::_uiohook_event__bindgen_ty_1 {
                     wheel: event_data.into(),
                 },
@@ -354,13 +357,12 @@ mod native {
         // be used and the original pointer and data will not be read or mutated.
         // This means that the pointer can be safely freed when this function is complete.
         if let Some(mut native_event) = unsafe { event.as_mut() } {
-            if let Ok(mut rusty_event) = from_native(native_event) {
-                set_mode(&mut rusty_event, &mut native_event);
+            let mut rusty_event = from_native(native_event);
+            set_mode(&mut rusty_event, &mut native_event);
 
-                // We can ignore the send error here because our receiver is static and will not
-                // be dropped until the end of the program.
-                let _ = sender.send(rusty_event);
-            }
+            // We can ignore the send error here because our receiver is static and will not
+            // be dropped until the end of the program.
+            let _ = sender.send(rusty_event);
         }
     }
 
@@ -373,7 +375,7 @@ mod native {
 
         let mut native_event = into_native(event);
         let _guard = POST_MUTEX.lock();
-        SYNTHETIC.store(native_event.type_, Ordering::SeqCst);
+        SYNTHETIC.store(native_event.type_ as u32, Ordering::SeqCst);
         unsafe {
             ffi::hook_post_event(&mut native_event as *mut uiohook_event);
         };

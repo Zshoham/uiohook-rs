@@ -1,4 +1,5 @@
 use std::{env, path::PathBuf};
+use bindgen::EnumVariation;
 
 use cmake;
 
@@ -21,6 +22,7 @@ fn main() {
         .derive_default(true)
         .derive_debug(true)
         .rustfmt_bindings(true)
+        .default_enum_style(EnumVariation::Rust { non_exhaustive: false })
         .generate()
         .expect("Unable to generate bindings.");
 

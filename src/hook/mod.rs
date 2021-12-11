@@ -12,7 +12,7 @@ use crate::hook::event::{
 };
 use crate::hook::global::HookId;
 
-mod constants;
+pub(crate) mod constants;
 
 pub mod event;
 pub mod global;

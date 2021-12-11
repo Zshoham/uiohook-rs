@@ -10,10 +10,6 @@ use uiohook_sys as ffi;
 ")]
 pub struct PostEventError(pub String);
 
-#[derive(Debug, Error)]
-#[error("Could not parse native event, event has an unrecognized type: {0}")]
-pub struct EventParseError(pub ffi::event_type);
-
 #[cfg(target_os = "linux")]
 #[derive(Debug, Error)]
 pub enum HookError {
@@ -46,7 +42,7 @@ impl From<u32> for HookError {
             ffi::UIOHOOK_ERROR_X_RECORD_CREATE_CONTEXT => HookError::XRecordCreateContext,
             ffi::UIOHOOK_ERROR_X_RECORD_ENABLE_CONTEXT => HookError::XRecordEnableContext,
             ffi::UIOHOOK_ERROR_X_RECORD_GET_CONTEXT => HookError::XRecordGetContext,
-            ffi::UIOHOOK_FAILURE | _ => HookError::Unknown("unknown error code", Box::new(())),
+            _ => HookError::Unknown("unknown error code", Box::new(())),
         }
     }
 }
@@ -71,7 +67,7 @@ impl From<u32> for HookError {
             ffi::UIOHOOK_ERROR_OUT_OF_MEMORY => HookError::OutOfMemory,
             ffi::UIOHOOK_ERROR_SET_WINDOWS_HOOK_EX => HookError::SetHookEx,
             ffi::UIOHOOK_ERROR_GET_MODULE_HANDLE => HookError::GetModuleHandle,
-            ffi::UIOHOOK_FAILURE | _ => HookError::Unknown("unknown error code", Box::new(())),
+            _ => HookError::Unknown("unknown error code", Box::new(())),
         }
     }
 }
@@ -105,7 +101,7 @@ impl From<u32> for HookError {
             ffi::UIOHOOK_ERROR_CREATE_RUN_LOOP_SOURCE => HookError::CreateRunLoopSource,
             ffi::UIOHOOK_ERROR_GET_RUNLOOP => HookError::GetRunLoop,
             ffi::UIOHOOK_ERROR_CREATE_OBSERVER => HookError::CreateObserver,
-            ffi::UIOHOOK_FAILURE | _ => HookError::Unknown("unknown error code", Box::new(())),
+            _ => HookError::Unknown("unknown error code", Box::new(())),
         }
     }
 }

@@ -2,17 +2,7 @@ use bitflags::bitflags;
 use ffi::*;
 use uiohook_sys as ffi;
 
-pub const EVENT_HOOK_ENABLED: ffi::event_type = ffi::_event_type_EVENT_HOOK_ENABLED;
-pub const EVENT_HOOK_DISABLED: ffi::event_type = ffi::_event_type_EVENT_HOOK_DISABLED;
-pub const EVENT_KEY_TYPED: ffi::event_type = ffi::_event_type_EVENT_KEY_TYPED;
-pub const EVENT_KEY_PRESSED: ffi::event_type = ffi::_event_type_EVENT_KEY_PRESSED;
-pub const EVENT_KEY_RELEASED: ffi::event_type = ffi::_event_type_EVENT_KEY_RELEASED;
-pub const EVENT_MOUSE_CLICKED: ffi::event_type = ffi::_event_type_EVENT_MOUSE_CLICKED;
-pub const EVENT_MOUSE_PRESSED: ffi::event_type = ffi::_event_type_EVENT_MOUSE_PRESSED;
-pub const EVENT_MOUSE_RELEASED: ffi::event_type = ffi::_event_type_EVENT_MOUSE_RELEASED;
-pub const EVENT_MOUSE_MOVED: ffi::event_type = ffi::_event_type_EVENT_MOUSE_MOVED;
-pub const EVENT_MOUSE_DRAGGED: ffi::event_type = ffi::_event_type_EVENT_MOUSE_DRAGGED;
-pub const EVENT_MOUSE_WHEEL: ffi::event_type = ffi::_event_type_EVENT_MOUSE_WHEEL;
+pub type NativeEventKind = ffi::event_type;
 
 bitflags! {
     #[derive(Default)]
