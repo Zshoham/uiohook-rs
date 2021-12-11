@@ -6,13 +6,18 @@ use uiohook_sys as ffi;
 crate::map_native! {
     /// Data describing a single monitor.
     ///
+    /// The origin of the screen's coordinates is the top left corner,
+    /// the X and Y axis of the screen are both treated as the positive parts of the axis.
+    ///
     /// This struct is returned by the [`screen_info`] function, see its documentation for
     /// more information.
     screen_data => ScreenData {
         /// The screen number assigned by the OS.
         number => number: u8,
-        x => x: i16,
-        y => y: i16,
+        /// X coordinate of the screen origin (top left corner).
+        x => origin_x: i16,
+        /// Y coordinate of the screen origin (top left corner)
+        y => origin_y: i16,
         width => width: u16,
         height => height:u16
     }
@@ -74,7 +79,7 @@ pub fn multi_click_time() -> Option<u64> {
 
 pub fn screen_info() -> Vec<ScreenData> {
     let mut native_vec = unsafe {
-        let mut count = 0u8;
+        let mut count = 1u8;
         let screens = ffi::hook_create_screen_info(&mut count);
         Vec::from_raw_parts(screens, count as usize, count as usize)
     };
