@@ -1,8 +1,6 @@
 use uiohook_rs::system_properties;
 
 fn main() {
-    uiohook_rs::hook::global::enable_logging();
-
     println!(
         "auto_repeat_delay: {}",
         system_properties::auto_repeat_delay().unwrap()

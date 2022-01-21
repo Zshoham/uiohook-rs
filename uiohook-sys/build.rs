@@ -4,17 +4,22 @@ use bindgen::EnumVariation;
 use cmake;
 
 fn main() {
-    let dst = cmake::build("libuiohook");
+    println!("cargo:rerun-if-changed=wrapper.c");
+    println!("cargo:rerun-if-changed=wrapper.h");
+
+    let uihook_dst = cmake::build("libuiohook");
+    cc::Build::new().file("wrapper.c").compile("wrapper");
 
     println!(
         "cargo:rustc-link-search=native={}",
-        dst.join("lib").display()
+        uihook_dst.join("lib").display()
     );
     println!("cargo:rustc-link-lib=user32");
     println!("cargo:rustc-link-lib=static=uiohook");
-    println!("cargo:include={}", dst.join("include").display());
-    println!("cargo:lib={}", dst.join("lib").display());
-    println!("cargo:root={}", dst.display());
+    println!("cargo:rustc-link-lib=static=wrapper");
+    println!("cargo:include={}", uihook_dst.join("include").display());
+    println!("cargo:lib={}", uihook_dst.join("lib").display());
+    println!("cargo:root={}", uihook_dst.display());
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")

@@ -44,7 +44,7 @@
 //! *   Synthetic Events - This functionality has no equivalent on the OS level, the way it is implemented
 //!     is by doing two things, first all calls to [`post_event`] are synchronized to be in order.
 //!     Secondly when posting the event we take event type (which is basically the only information guaranteed
-//!     to stay not change after going through the OS) and store it inside an atomic variable - `SYNTHETIC`.
+//!     to not change after going through the OS) and store it inside an atomic variable - `SYNTHETIC`.
 //!     Later when an event arrives at the OS handler we can check if its value is the same as `SYNTHETIC`
 //!     if so we set the event mode to be synthetic nad change `SYNTHETIC` back to 0.
 //!     The problem is, although usually the posted event will get to the OS handler in time, there
@@ -157,6 +157,7 @@ static HOOKS: Lazy<Arc<DashMap<HookId, HookCallback, ahash::RandomState>>> =
 static RESERVE_CALLBACK: Mutex<Option<HookFilter>> = const_mutex(None);
 
 mod native {
+    use std::ffi::CStr;
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -222,7 +223,7 @@ mod native {
         }
     }
 
-    pub fn from_native(native: &mut ffi::uiohook_event) -> HookEvent {
+    fn from_native(native: &mut ffi::uiohook_event) -> HookEvent {
         let mut meta = EventMetaData {
             time: native.time as u128,
             mask: native.mask.into(),
@@ -269,7 +270,7 @@ mod native {
         }
     }
 
-    pub fn into_native(event: HookEvent) -> ffi::uiohook_event {
+    fn into_native(event: HookEvent) -> ffi::uiohook_event {
         let mask = event.metadata.mask;
 
         let (event_type, event_data) = match event.kind {
@@ -366,6 +367,26 @@ mod native {
         }
     }
 
+    #[cfg(feature = "logging")]
+    extern "C" fn logger(level: ffi::log_level, raw_message: *const std::os::raw::c_char) -> bool {
+        match unsafe { CStr::from_ptr(raw_message) }.to_str() {
+            Ok(log_message) => match level {
+                ffi::log_level::LOG_LEVEL_INFO => log::info!("{}", log_message),
+                ffi::log_level::LOG_LEVEL_DEBUG => log::debug!("{}", log_message),
+                ffi::log_level::LOG_LEVEL_WARN => log::warn!("{}", log_message),
+                ffi::log_level::LOG_LEVEL_ERROR => log::error!("{}", log_message)
+            },
+            Err(_) => return false
+        }
+
+        return true;
+    }
+
+    #[cfg(feature = "logging")]
+    pub fn enable_logging() {
+        unsafe { ffi::hook_set_rusty_logger(Some(logger)) }
+    }
+
     pub fn set_event_handler() {
         unsafe { ffi::hook_set_dispatch_proc(Some(event_handler)) }
     }
@@ -397,6 +418,8 @@ mod native {
 }
 
 fn control_thread_main() -> JoinHandle<Result<(), HookError>> {
+    #[cfg(feature = "logging")]
+    native::enable_logging();
     native::set_event_handler();
     let hook_thread = thread::spawn(hook_thread_main);
     let (_, receiver) = &*EVENT_BUS;
@@ -755,7 +778,7 @@ pub fn reserve_events<F: Fn(&HookEvent) -> bool + Sync + Send + 'static>(filter:
     )
 }
 
-// we define an empty reserve_events function when it test mode to allow the tests
+// we define an empty reserve_events function when in test mode to allow the tests
 // to be cross platform with their use of reserve_events though obviously when running the
 // tests on linux the events will not be reserved and you probably should run them in a headless
 // container with something like xvfb
