@@ -810,8 +810,8 @@ impl Hook {
     ///
     /// let handle = hook_start().expect("oops hook already running");
     ///
-    /// // we create a mouse wheel event, and post it.
-    /// HookEvent::mouse(MouseButton::Left).moved(10, 10).post();
+    /// // we create a mouse move event, and post it
+    /// HookEvent::mouse(MouseButton::NoButton).moved(10, 10).post();
     ///
     /// // wait a little for the events to arrive.
     /// sleep(Duration::from_millis(5));

@@ -69,7 +69,7 @@
 //! let _id = register_hook(on_mouse_click);
 //! let handle = hook_start().expect("oops hook is already running");
 //! sleep(Duration::from_millis(5)); // the hook will print every mouse movement during this time.
-//! handle.stop();
+//! handle.stop().unwrap();
 //! ```
 //!
 //! ## Removing Hooks
@@ -91,7 +91,7 @@
 //! sleep(Duration::from_millis(1)); // the hook will work during this time.
 //! unregister_hook(id);
 //! sleep(Duration::from_millis(1)); // the hook will not work anymore.
-//! handle.stop();
+//! handle.stop().unwrap();
 //! ```
 //!
 //! ## Using Start Blocking
@@ -121,7 +121,10 @@
 //! // that will fire after the hook is started.
 //! thread::spawn(|| {
 //!     sleep(Duration::from_millis(10));
-//!     HookEvent::mouse(MouseButton::Left).pair().post();
+//!     HookEvent::mouse(MouseButton::Left)
+//!         .pair()
+//!         .post()
+//!         .expect("couldnt post event.");
 //! });
 //! // This will block until a mouse click is received.
 //! hook_start_blocking().unwrap();
@@ -157,6 +160,9 @@ static HOOKS: Lazy<Arc<DashMap<HookId, HookCallback, ahash::RandomState>>> =
 static RESERVE_CALLBACK: Mutex<Option<HookFilter>> = const_mutex(None);
 
 mod native {
+    // Cstr is only used in the logger function that is compiled only when the logging
+    // feature is enables.
+    #[allow(unused_imports)]
     use std::ffi::CStr;
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -374,9 +380,9 @@ mod native {
                 ffi::log_level::LOG_LEVEL_INFO => log::info!("{}", log_message),
                 ffi::log_level::LOG_LEVEL_DEBUG => log::debug!("{}", log_message),
                 ffi::log_level::LOG_LEVEL_WARN => log::warn!("{}", log_message),
-                ffi::log_level::LOG_LEVEL_ERROR => log::error!("{}", log_message)
+                ffi::log_level::LOG_LEVEL_ERROR => log::error!("{}", log_message),
             },
-            Err(_) => return false
+            Err(_) => return false,
         }
 
         return true;
@@ -518,7 +524,7 @@ impl HookHandle {
     /// sleep(Duration::from_millis(10)); // sleep to give everything time to set be set up.
     ///
     /// // The user moves his mouse...
-    /// # HookEvent::mouse(MouseButton::NoButton).moved(10, 10).post();
+    /// # HookEvent::mouse(MouseButton::NoButton).moved(10, 10).post().expect("couldnt post event");
     ///
     /// // we ignore all other errors and Ok states just to illustrate the resume unwind functionality,
     /// // since we already know the kind of error we get in this contrived example.
@@ -660,16 +666,14 @@ pub fn register_hook<F: Fn(&HookEvent) + Sync + Send + 'static>(handler: F) -> H
     register_boxed_hook(Box::new(handler))
 }
 
-pub(crate) fn register_boxed_hook(
-    handler: Box<dyn Fn(&HookEvent) + Sync + Send + 'static>,
-) -> HookId {
+pub(crate) fn register_boxed_hook(handler: HookCallback) -> HookId {
     static HOOK_ID: Mutex<u128> = const_mutex(0u128);
 
-    // This is basically the `fetch_add`, only rust doest have
-    // 128 bit atomic types on stable, so we use a mutex instead.
-    let guard = &mut *HOOK_ID.lock();
-
     let id = {
+        // This is basically the `fetch_add`, only rust doest have
+        // 128 bit  atomic types on stable, so we use a mutex instead.
+        let guard = &mut *HOOK_ID.lock();
+
         // We use wrapping add to guarantee that there is no overflow panic.
         // This code might theoretically be erroneous if we manage to overflow the
         // hook id and the hook id 0 is still in the hashmap, but that would require
@@ -683,10 +687,7 @@ pub(crate) fn register_boxed_hook(
     id
 }
 
-pub(crate) fn register_boxed_hook_with_id(
-    id: HookId,
-    handler: Box<dyn Fn(&HookEvent) + Sync + Send + 'static>,
-) {
+pub(crate) fn register_boxed_hook_with_id(id: HookId, handler: HookCallback) {
     HOOKS.insert(id, handler);
 }
 
@@ -781,7 +782,7 @@ pub fn reserve_events<F: Fn(&HookEvent) -> bool + Sync + Send + 'static>(filter:
 // we define an empty reserve_events function when in test mode to allow the tests
 // to be cross platform with their use of reserve_events though obviously when running the
 // tests on linux the events will not be reserved and you probably should run them in a headless
-// container with something like xvfb
+// container with something like xvfb.
 #[cfg(all(test, target_os = "linux"))]
 #[doc(hidden)]
 pub fn reserve_events<F: Fn(&HookEvent) -> bool + Sync + Send + 'static>(filter: F) {
