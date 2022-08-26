@@ -20,8 +20,8 @@ macro_rules! map_native {
             ),+
         }
 
-        impl From<&mut $native> for $rusty {
-            fn from(native: &mut $native) -> Self {
+        impl From<&$native> for $rusty {
+            fn from(native: &$native) -> Self {
                 $rusty {
                     $( $rusty_name : native.$native_name.into()),+
                 }

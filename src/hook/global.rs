@@ -229,7 +229,7 @@ mod native {
         }
     }
 
-    fn from_native(native: &mut ffi::uiohook_event) -> HookEvent {
+    fn from_native(native: &ffi::uiohook_event) -> HookEvent {
         let mut meta = EventMetaData {
             time: native.time as u128,
             mask: native.mask.into(),
@@ -239,21 +239,21 @@ mod native {
         set_timestamp(&mut meta);
 
         #[inline(always)]
-        fn from_keyboard(native: &mut ffi::uiohook_event) -> KeyboardEvent {
+        fn from_keyboard(native: &ffi::uiohook_event) -> KeyboardEvent {
             // SAFETY: we assume that the native library sets the union to the type matching what is found in `native.type_`.
-            unsafe { &mut native.data.keyboard }.into()
+            unsafe { &native.data.keyboard }.into()
         }
 
         #[inline(always)]
-        fn from_mouse(native: &mut ffi::uiohook_event) -> MouseEvent {
+        fn from_mouse(native: &ffi::uiohook_event) -> MouseEvent {
             // SAFETY: we assume that the native library sets the union to the type matching what is found in `native.type_`.
-            unsafe { &mut native.data.mouse }.into()
+            unsafe { &native.data.mouse }.into()
         }
 
         #[inline(always)]
-        fn from_mouse_wheel(native: &mut ffi::uiohook_event) -> MouseWheelEvent {
+        fn from_mouse_wheel(native: &ffi::uiohook_event) -> MouseWheelEvent {
             // SAFETY: we assume that the native library sets the union to the type matching what is found in `native.type_`.
-            unsafe { &mut native.data.wheel }.into()
+            unsafe { &native.data.wheel }.into()
         }
 
         let event_data = match native.type_ {

@@ -78,10 +78,10 @@ pub fn multi_click_time() -> Option<u64> {
 }
 
 pub fn screen_info() -> Vec<ScreenData> {
-    let mut native_vec = unsafe {
+    let native_vec = unsafe {
         let mut count = 1u8;
         let screens = ffi::hook_create_screen_info(&mut count);
         Vec::from_raw_parts(screens, count as usize, count as usize)
     };
-    native_vec.iter_mut().map(ScreenData::from).collect()
+    native_vec.iter().map(ScreenData::from).collect()
 }
