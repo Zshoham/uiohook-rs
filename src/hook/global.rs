@@ -397,6 +397,10 @@ mod native {
         unsafe { ffi::hook_set_dispatch_proc(Some(event_handler)) }
     }
 
+    pub fn remove_event_handler() {
+        unsafe { ffi::hook_set_dispatch_proc(None) }
+    }
+
     pub fn post_event(event: HookEvent) {
         static POST_MUTEX: Mutex<()> = const_mutex(());
 
@@ -453,6 +457,7 @@ fn control_thread_main() -> JoinHandle<Result<(), HookError>> {
         }
     }
 
+    native::remove_event_handler();
     RUNNING.store(false, Ordering::SeqCst);
     hook_thread
 }
