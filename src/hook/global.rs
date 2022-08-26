@@ -748,13 +748,17 @@ pub fn post_event(event: HookEvent) -> Result<(), PostEventError> {
 ///
 /// # Safety
 /// This function is marked unsafe not because it validates rust's memory safety guarantees, but because
-/// it is unstable in its promise. First of all it is not supported on all platforms, only windows
-/// and macOS. Secondly because it requires the filter closure to run inside the OS thread handling the
+/// it is unstable in its promise.
+/// * First, as mentioned above the function is not supported on all platforms, only windows
+/// and macOS.
+/// * Second, because it requires the filter closure to run inside the OS thread handling the
 /// event, something like the closure running too long might cause the OS to drop the event
 /// and stop executing the callback, meaning side effects of this function might not always happen consistently.
-/// Finally the mechanism of preventing propagation is simply setting a reserved field to true, which means the
+/// * Third, the mechanism of preventing propagation is simply setting a reserved field to true, which means the
 /// some processes could ignore this field and still use the event, or some process might get the event
 /// before the reserved field is set.
+/// * Finally, the function itself can be very harmful, as shown in the example below it is very
+/// easy to completely prevent the user from interacting with computer using this function
 ///
 /// # Example:
 /// ```rust
@@ -766,13 +770,13 @@ pub fn post_event(event: HookEvent) -> Result<(), PostEventError> {
 ///
 /// // while the hook is active all user events will be reserved, which means that the user
 /// // will not be able to interact with the UI of the system for this duration.
-/// reserve_events(|_| true);
+/// unsafe { reserve_events(|_| true) };
 ///
 /// register_hook(|e| assert!(e.metadata.mode.contains(EventMode::RESERVED)));
 /// ```
 #[cfg_attr(rustdoc, doc(cfg(any(target_os = "windows", target_os = "macos"))))]
 #[cfg(any(rustdoc, target_os = "windows", target_os = "macos"))]
-pub fn reserve_events<F: Fn(&HookEvent) -> bool + Sync + Send + 'static>(filter: F) {
+pub unsafe fn reserve_events<F: Fn(&HookEvent) -> bool + Sync + Send + 'static>(filter: F) {
     std::mem::swap(
         RESERVE_CALLBACK.lock().deref_mut(),
         &mut Some(Box::new(filter)),

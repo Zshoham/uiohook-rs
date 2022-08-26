@@ -534,7 +534,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -591,7 +591,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -662,7 +662,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -719,7 +719,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -792,7 +792,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -811,7 +811,7 @@ impl Hook {
     /// let handle = hook_start().expect("oops hook already running");
     ///
     /// // we create a mouse move event, and post it
-    /// HookEvent::mouse(MouseButton::NoButton).moved(10, 10).post();
+    /// HookEvent::mouse(MouseButton::NoButton).moved(10, 10).post().unwrap();
     ///
     /// // wait a little for the events to arrive.
     /// sleep(Duration::from_millis(5));
@@ -845,7 +845,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
@@ -910,7 +910,7 @@ impl Hook {
     ///```rust
     /// # use uiohook_rs::hook::global::reserve_events;
     /// # // prevent these events from effecting the user when running tests
-    /// # reserve_events(|e| e.is_synthetic());
+    /// # unsafe { reserve_events(|e| e.is_synthetic()) };
     /// # use std::sync::atomic::{AtomicBool, Ordering};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;

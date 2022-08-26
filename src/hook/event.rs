@@ -76,7 +76,7 @@ impl EventMetaData {
     /// # use std::time::Duration;
     ///
     /// // we only want to reserve synthetic events.
-    /// reserve_events(|e| e.is_synthetic());
+    /// unsafe { reserve_events(|e| e.is_synthetic()) };
     ///
     /// register_hook(|e| {
     ///     // if we get a synthetic event it should be reserved.
